@@ -195,3 +195,167 @@ Function Array_MoveCell_Area(Cell As Range) As Variant
     Array_MoveCell_Area = Sheet.Range(Cells(Cell.Row, Cell.Column), Cells(EndRow, EndCol))
 
 End Function
+
+'-------------------------------------------------------------------------------------------------------------------------------------------
+
+Sub Array_For2D(Optional Row As String = "r", Optional Col As String = "c", Optional Indent As Long = 0)
+
+    Dim ArrayName As String
+    ArrayName = InputBox("配列名を入力", "配列探索")
+    
+    Dim Text1(3) As Variant
+    Text1(0) = "For " & Row & " = Lbound(" & ArrayName & " ,1) to Ubound(" & ArrayName & " ,1)"
+    Text1(1) = "For " & Col & " = Lbound(" & ArrayName & " ,2) to Ubound(" & ArrayName & " ,2)"
+    Text1(2) = "Next " & Col
+    Text1(3) = "Next " & Row
+    
+    Dim PrintText As String
+    PrintText = PrintText + Space(4 + (Indent * 4)) & Text1(0) & vbLf & Space(4 * 2 + (Indent * 4)) & Text1(1) & vbLf & _
+                Space(4 * 3 + (Indent * 4)) & vbLf & Space(4 * 2 + (Indent * 4)) & Text1(2) & vbLf & Space(4 + (Indent * 4)) & Text1(3)
+    Debug.Print "クリップボードに保存しました"
+    SetClipboard PrintText
+    
+End Sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------
+Sub get_Cell()
+
+    Dim Sheet As Worksheet: Set Sheet = ActiveSheet
+    Dim SRow As Long
+    Dim SCol As Long
+    Dim Text1 As String
+    
+    SRow = Selection.Row
+    SCol = Selection.Column
+    
+    On Error Resume Next
+    
+        Dim CellObj As Object: Set CellObj = ActiveSheet.Cells(SRow, SCol).Name
+        Dim CellName As String: CellName = CellObj.Name
+        
+        Text1 = Sheet.CodeName & ".Range(" & """" & CellName & """" & ")"
+    
+        If Err.Number <> 0 Then
+        
+            Text1 = Sheet.CodeName & ".Cells(" & SRow & "," & SCol & ")"
+        
+        End If
+    On Error GoTo 0
+    
+    Debug.Print Text1
+    SetClipboard Text1
+    
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------
+Sub Create_Enum()
+    
+    Dim RefCell
+    Set RefCell = Application.InputBox("列挙体の範囲", "列挙体 作成", , , , , , 8)
+    
+    Dim TopStr
+    TopStr = InputBox("先頭につける文字", "列挙体 作成")
+    
+    If TopStr = "" Then TopStr = "Enum"
+    
+    Dim NewData() As Variant
+    Dim data As Variant
+    
+    Dim Sheet As Worksheet: Set Sheet = ActiveSheet
+    Dim EndRow As Long: EndRow = Cells(RefCell.Row, RefCell.Column).Row
+    Dim EndCol As Long: EndCol = Cells(RefCell.Row, RefCell.Column).Column
+    
+    a = Range(Cells(RefCell.Row, RefCell.Column), Cells(RefCell.Rows.Count, RefCell.Columns.Count)).Count
+    b = RefCell.Row & "," & RefCell.Column & "," & RefCell.Rows.Count & "," & RefCell.Columns.Count
+    
+    i = 0
+    ReDim data(RefCell.Rows.Count * RefCell.Columns.Count - 1)
+    For r = RefCell.Row To RefCell.Row + RefCell.Rows.Count - 1
+        For C = RefCell.Column To RefCell.Column + RefCell.Columns.Count - 1
+            data(i) = TopStr & i + 1 & "_" & Sheet.Cells(r, C)
+            i = i + 1
+        Next
+    Next
+    
+    Dim CellName As Variant
+    CellName = Application.InputBox("列挙体の名前", "列挙体 作成")
+    
+    Dim Text1(2) As Variant
+    
+    Text1(0) = "Public Enum " & CellName
+    Text1(1) = "End Enum"
+    For i = LBound(data) To UBound(data)
+        Text1(2) = Text1(2) + Tab_F & data(i) & " = " & i + 1 & vbLf
+    Next
+    
+    Dim PrintStr As String
+    PrintStr = Text1(0) & vbLf & vbLf & Text1(2) & vbLf & Text1(1)
+    SetClipboard PrintStr
+    Debug.Print PrintStr & vbLf & vbLf & "クリップボードにコピーしました。"
+    
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------
+Sub Array_Unique()
+    
+    Dim ArrayData
+    Dim OutputDta
+    Set ArrayData = Application.InputBox("重複を削除したいセル", "重複", , , , , , 8)
+    Set OutputDta = Application.InputBox("出力先のセル", "重複", , , , , , 8)
+    
+    Dim StartR As Long: StartR = ArrayData.Row
+    Dim StartC As Long: StartC = ArrayData.Column
+    Dim EndR As Long: EndR = StartR + ArrayData.Rows.Count
+    Dim EndC As Long: EndC = StartC + ArrayData.Columns.Count
+    Dim ArrayData_Obj As Object: Set ArrayData_Obj = ArrayData.Worksheet
+    Dim OutputDta_Obj As Object: Set OutputDta_Obj = OutputDta.Worksheet
+    
+    Dim data() As Variant
+    ReDim data((ArrayData.Rows.Count * ArrayData.Columns.Count))
+    i = 0
+    
+    For r = StartR To EndR - 1
+        For C = StartC To EndC - 1
+            data(i) = ArrayData_Obj.Cells(r, C)
+            i = i + 1
+        Next C
+    Next r
+    data = Remove_Unique(data)
+    
+    For i = LBound(data) To UBound(data)
+        OutputDta_Obj.Cells(OutputDta.Row + i, OutputDta.Column) = data(i)
+    Next
+    
+End Sub
+
+Function Remove_Unique(data As Variant) As Variant
+
+    Dim NewData() As Variant
+    Dim NList() As Variant
+    k = 0
+    For i = LBound(data) To UBound(data)
+    
+        flg = False
+        
+        If i = 0 Then
+            ReDim Preserve NewData(k)
+            NewData(k) = data(i)
+            k = k + 1
+        End If
+        
+        For j = LBound(NewData) To UBound(NewData)
+            If data(i) = NewData(j) Then
+                flg = True
+            End If
+        Next j
+        
+        If flg = False Then
+            ReDim Preserve NewData(k)
+            NewData(k) = data(i)
+            k = k + 1
+        End If
+        
+    Next i
+    
+    Remove_Unique = NewData
+
+End Function
+
