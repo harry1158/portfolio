@@ -1,0 +1,197 @@
+Sub Array_2D_Create(Optional Indent As Long = 1)
+
+    Dim wsActive As Worksheet: Set wsActive = ActiveSheet
+    Dim Select_Start(1) As Long '選択したセルの最初のセル
+        Select_Start(0) = Selection.Row
+        Select_Start(1) = Selection.Column
+    
+    Dim Select_End(1) As Long '選択したセルの最後のセル
+        Select_End(0) = Selection(Selection.Count).Row
+        Select_End(1) = Selection(Selection.Count).Column
+    
+    Dim Select_Data As Variant '選択範囲のセルを配列の入れる
+        Select_Data = wsActive.Range(Cells(Select_Start(0), Select_Start(1)), Cells(Select_End(0), Select_End(1)))
+    
+    Dim data As String '配列の名前
+    data = InputBox("配列の名前", "配列作成")
+    Dim IsMoveArr As Long
+    IsMoveArr = MsgBox("動的配列にしますか？", vbYesNo) 'yes = 6,no = 7
+    Dim EndCell As Variant
+    
+    If IsMoveArr = 6 Then
+        EndCell = "),Cells(Cells(Rows.Count, " & Select_Start(1) & ").End(xlUp).Row," & Select_End(1) & "))"
+    ElseIf IsMoveArr = 7 Then
+        EndCell = "),Cells(" & Select_End(0) & "," & Select_End(1) & "))"
+    End If
+    
+    'clipbordに入れるtext作成
+    Dim Print_String(2)
+    Dim Text1 As String
+    If data <> "" Then
+        Print_String(0) = Tab_F(Indent) & wsActive.CodeName & ".Select"
+        Print_String(1) = Tab_F(Indent) & "Dim " & data & " as Variant"
+        Print_String(2) = Tab_F(Indent) & data & " =  Range(Cells(" & Select_Start(0) & "," & Select_Start(1) & EndCell
+        Call GDA(Select_Data)
+    End If
+    
+    For i = LBound(Print_String) To UBound(Print_String)
+        Text1 = Text1 + Print_String(i) & vbLf
+    Next
+    
+    Call SetClipboard(Text1)
+
+End Sub
+
+Function Get_2DArray(ByVal Select_Data)
+
+        Dim Min_Array As Long
+        Min_Array = LBound(Select_Data)
+        Dim TempArray() As Variant
+        ReDim TempArray(Min_Array To UBound(Select_Data, 1) + 1, Min_Array To UBound(Select_Data, 2) + 1)
+        '行、列番号の追加
+        i = 1
+        For r = LBound(TempArray, 1) To UBound(TempArray, 1)
+            If r + 1 = UBound(TempArray, 1) + 1 Then Exit For '配列の最大値 + 1と r+1 同じになったらforを抜ける
+            TempArray(r + 1, Min_Array) = i
+            i = i + 1
+        Next
+        i = 1
+        
+        For C = LBound(TempArray, 2) To UBound(TempArray, 2)
+            If C + 1 = UBound(TempArray, 2) + 1 Then Exit For  '配列の最大値 + 1と c+1 同じになったらforを抜ける
+            TempArray(Min_Array, C + 1) = i
+            i = i + 1
+        Next
+        
+       'TempArrayに配列の中身を追加
+        For r = LBound(TempArray, 1) + 1 To UBound(TempArray, 1)
+            For C = LBound(TempArray, 2) + 1 To UBound(TempArray, 2)
+                TempArray(r, C) = Select_Data(r - 1, C - 1)
+            Next
+        Next
+        
+        'TempArrayをSelect_Dataに代入
+        Select_Data = TempArray
+        
+        Dim StrCount() As Long
+        ReDim StrCount(UBound(Select_Data, 2) - Min_Array)
+        Dim TempCount() As Long
+        ReDim TempCount(UBound(Select_Data, 1) - Min_Array)
+        
+        '配列の中身の文字列の大きさ
+        For str_c = LBound(Select_Data, 2) - Min_Array To UBound(Select_Data, 2) - Min_Array
+            For str_r = LBound(Select_Data, 1) - Min_Array To UBound(Select_Data, 1) - Min_Array
+                TempCount(str_r) = LenB(StrConv(Select_Data(str_r + Min_Array, str_c + Min_Array), vbFromUnicode))
+            Next
+            
+            StrCount(str_c) = WorksheetFunction.Max(TempCount)
+            ReDim TempCount(UBound(Select_Data, 1))
+        Next
+        
+        For r = LBound(Select_Data, 1) To UBound(Select_Data, 1)
+            For C = LBound(Select_Data, 2) To UBound(Select_Data, 2)
+                g = g + " | " & Select_Data(r, C) & Space(StrCount(C - Min_Array) - LenB(StrConv(Select_Data(r, C), vbFromUnicode)))
+            Next
+                a = a + g & " |" & vbLf
+                g = ""
+        Next
+        
+        Get_2DArray = a
+        
+End Function
+
+Function Get_1DArray(ByVal Select_Data)
+
+    Dim Min_Array As Long
+    Min_Array = LBound(Select_Data)
+    Dim Temp_Array() As Variant
+    ReDim Temp_Array(Min_Array To UBound(Select_Data), Min_Array To Min_Array)
+        
+    For r = Min_Array To UBound(Temp_Array, 1)
+        For C = Min_Array To UBound(Temp_Array, 2)
+            Temp_Array(r, C) = Select_Data(r)
+        Next
+    Next
+        
+    Get_1DArray = Get_2DArray(Temp_Array)
+
+End Function
+
+Function Jude_D(ByVal Select_Data)
+
+    Dim ColMax As Long
+    Dim ColMin As Long
+    Dim RankCount As Long
+    Dim Tmp As Long
+    
+    On Error Resume Next
+    
+    Do While Err.Number = 0
+    
+        RankCount = RankCount + 1
+        Tmp = UBound(Select_Data, RankCount)
+        
+    Loop
+    
+    On Error GoTo 0
+
+    Jude_D = RankCount - 1
+
+End Function
+
+Sub GDA(ByVal Select_Data, Optional Top_Row As Long = 0) 'Get Debug Array
+    
+    Dim D As Long
+    If UBound(Select_Data, 1) >= 30 Then Top_Row = 10
+    D = Jude_D(Select_Data)
+    Select_Data = Cut_GDP(Select_Data, Top_Row)
+    If D = 1 Then
+        a = vbLf & LBound(Select_Data) & " to " & UBound(Select_Data) & vbLf & Get_1DArray(Select_Data)
+        Debug.Print a
+    ElseIf D = 2 Then
+        a = vbLf & LBound(Select_Data, 1) & " to " & UBound(Select_Data, 1) & ", " & LBound(Select_Data, 2) & " to " & UBound(Select_Data, 2) & vbLf & Get_2DArray(Select_Data)
+        Debug.Print a
+    End If
+    
+End Sub
+
+Function Cut_GDP(ByVal Select_Data, Optional Top_Row As Long = 0)
+    
+    If Top_Row = 0 Then Top_Row = UBound(Select_Data)
+    
+    Dim D As Long
+    D = Jude_D(Select_Data)
+    
+    'If LBound(Select_Data) = 0 Then Top_Row = Top_Row - 1
+    
+    Dim Temp_1DArray() As Variant
+    Dim Temp_2DArray() As Variant
+    
+    If D = 1 Then
+        ReDim Temp_1DArray(LBound(Select_Data) To Top_Row) As Variant
+        For i = LBound(Temp_1DArray) To UBound(Temp_1DArray)
+            Temp_1DArray(i) = Select_Data(i)
+            Cut_GDP = Temp_1DArray
+        Next
+    ElseIf D = 2 Then
+        ReDim Temp_2DArray(LBound(Select_Data, 1) To Top_Row, LBound(Select_Data, 2) To UBound(Select_Data, 2)) As Variant
+        For r = LBound(Temp_2DArray, 1) To UBound(Temp_2DArray, 1)
+            For C = LBound(Temp_2DArray, 2) To UBound(Temp_2DArray, 2)
+                Temp_2DArray(r, C) = Select_Data(r, C)
+                Cut_GDP = Temp_2DArray
+            Next
+        Next
+    End If
+    
+End Function
+
+Function Array_MoveCell_Area(Cell As Range) As Variant
+
+    Dim Sheet As Worksheet: Set Sheet = ActiveSheet
+    Dim EndRow As Long: EndRow = Cells(Cell.Row, Cell.Column).Row
+    Dim EndCol As Long: EndCol = Cells(Cell.Row, Cell.Column).Column
+    If Cells(Cell.Row + 1, Cell.Column) <> "" Then EndRow = Cells(Cell.Row, Cell.Column).End(xlDown).Row
+    If Cells(Cell.Row, Cell.Column + 1) <> "" Then EndCol = Cells(Cell.Row, Cell.Column).End(xlToRight).Column
+    Array_MoveCell_Area = Sheet.Range(Cells(Cell.Row, Cell.Column), Cells(EndRow, EndCol))
+
+End Function
