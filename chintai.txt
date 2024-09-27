@@ -113,5 +113,5 @@ def write_to_csv(data):
 
 # 実行
 for i in range(30):
-    main(i+1+16, 30)
+    main(i+1, 30)
     print (f"page{i+1}終了")
