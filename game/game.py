@@ -320,7 +320,7 @@ class Appview(tkinter.Canvas):
             attackPlayer = list(memberDict.to_dict().items())[0][1]
             selectItem = attackPlayer.items[int(get_data[0])]
             
-            if selectItem.skills == SkillsList[1] or abs(selectItem.mp) > attackPlayer.mp:
+            if selectItem.skills == SkillsList[1] or (abs(selectItem.mp) > attackPlayer.mp and selectItem.hp != 0) or (abs(selectItem.mp) > attackPlayer.hp and selectItem.mp != 0):
                 return
             
             if len(attackPlayer.usedItem) > 0:
@@ -452,7 +452,6 @@ def User_input():
         randChoice = random.choice(userList)
         memberDict.add_player(randChoice,NPC[i])
         userList.remove(randChoice)
-        
 
     for name,player in memberDict.to_dict().items(): #player item append
         for i in range(10):
@@ -460,7 +459,6 @@ def User_input():
             random_item = ItemList[random_itemName]
             player.items.append(random_item)
             player.items[i].itemName = random_itemName
-    list(memberDict.to_dict().items())[0][1].hp = 1
         
 def damageCalculation(attackPlayer:tuple[str,Player],defensePlayer:tuple[str,Player]):
     
@@ -528,11 +526,11 @@ def AI_choiceItem(NPCplayer:tuple[str,Player]) -> tuple[str,Player]:
 
     while True:
         i = i+1
-        if NPCplayer[1].state == stateList[0]: #NPCの攻撃武器(magic or attack)  
+        if NPCplayer[1].state == stateList[0]: #NPCのステータス(attack) [attack,defense,waite] 
             if b_attackSkills:
                 ChoiceItem = None
                 break
-            elif ChoiceItem.skills != SkillsList[1]: #Item state get attack
+            elif ChoiceItem.skills != SkillsList[1]: #ItemSkill state get attack or defense
                 break
             else:
                 ChoiceItem:Cards = random.choice(list(NPCplayer)[1].items)
@@ -624,11 +622,14 @@ def onlyItems(player:tuple[str,Player]):
         if player[1].usedItem[0] == i:
             random_itemName = random.choice(arrItemlist)
             random_item = ItemList[random_itemName]
-            if abs(player[1].usedItem[0].mp) > 0:
+            if abs(player[1].usedItem[0].mp) > 0 and abs(player[1].usedItem[0].hp)>0:
                 CountItems = len(player[1].items)-1
                 idx = random.randint(0,CountItems)
-            list(player)[1].items[idx] = random_item
-            list(player)[1].items[idx].itemName = random_itemName
+                list(player)[1].items[idx] = random_item
+                list(player)[1].items[idx].itemName = random_itemName
+            else:
+                list(player)[1].items[idx] = random_item
+                list(player)[1].items[idx].itemName = random_itemName
             list(player)[1].usedItem.clear()
 
 def AI_checker():
