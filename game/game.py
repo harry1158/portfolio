@@ -229,7 +229,6 @@ class Appview(tkinter.Canvas):
         
     #---turn switch
     def Finished_field(self):
-        self.itemconfig(self.finishedSpaceText,text = f"aaaa win")
         self.itemconfig(self.exitPageShape,tags = "exitBtn_on",outline = "black", fill = "#B7F9DD")
         self.itemconfig(self.exitPageText,tags = "exitBtn_on",text = "ゲールを終了する")
         for name,plyer in memberDict.to_dict().items():
